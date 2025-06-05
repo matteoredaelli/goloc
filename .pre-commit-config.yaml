@@ -1,0 +1,6 @@
+repos:
+- repo: https://github.com/google/addlicense
+  rev: 0.0.1
+  hooks:
+  - id: addlicense
+    args: [ "-c", "Matteo Redaelli", "*.go" ]
