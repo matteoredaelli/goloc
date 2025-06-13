@@ -23,10 +23,15 @@ import (
 //go:embed config.json
 var configData []byte
 
+type MultilineBlock struct {
+	Start string `json:"start,omitempty"`
+	End   string `json:"end,omitempty"`		
+}
+
 type LanguageConfig struct {
-	StartComment  string `json:"startComment,omitempty"`
-	EndComment    string `json:"endComment,omitempty"`
-	SingleComment string `json:"singleComment,omitempty"`
+	MultilineComments []MultilineBlock `json:"multilineComments,omitempty"`
+	SingleComments    []string `json:"singleComments,omitempty"`
+	MultilineStrings   []MultilineBlock `json:"multilineString,omitempty"`
 }
 
 type Config struct {

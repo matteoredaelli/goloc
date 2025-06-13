@@ -15,14 +15,104 @@
 package main
 
 import (
-	"fmt"
+	"bufio"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
 	"sync"
 )
+
+type BlockType int
+const (
+    None BlockType = iota
+    Comment
+    String
+)
+
+type Block struct {
+	blockType BlockType
+	end_string string
+}
+
+func is_line_with_single_comment(line string, config LanguageConfig) bool {
+	// line is already trimmed
+	for _, s := range config.SingleComments {
+		if strings.HasPrefix(line, s) {
+			return true
+		}
+	}
+	return false	
+}
+
+
+func find_end_block(line string, end_string string, index int) int {
+	index_new := index + len(end_string)
+	if len(line) > index_new {
+		return strings.Index(line[index_new:], end_string)
+	} else {
+		return -1
+	}
+}
+
+func find_start_block_comment(line string, config LanguageConfig, block *Block) error {
+	idx_start := -1
+	comment_idx := -1
+	comment_end_block := ""
+	string_idx := -1
+	string_end_block := ""
+	for _, b := range config.MultilineComments {
+		i := strings.Index(line, b.Start)
+		if i >= 0 && (comment_idx == -1 || i < comment_idx) {
+			comment_idx       = i
+			comment_end_block = b.End	
+		}
+	}
+	for _, b := range config.MultilineStrings {
+		i := strings.Index(line, b.Start)
+		log.Printf("multiline string start=%v, u=%v", b.Start, i)
+		if i >= 0 && (string_idx == -1 || i < string_idx) {
+			string_idx       = i
+			string_end_block = b.End	
+		}
+	}
+	log.Printf("comment_idx=%v, string_idx=%v", comment_idx, string_idx)
+	
+	switch {
+	case comment_idx >= 0 && (string_idx == -1 || comment_idx < string_idx):
+		idx_start = comment_idx
+		log.Printf("Multiline 'comment' startfound")
+		block.blockType =  Comment
+		block.end_string = comment_end_block
+	case string_idx >= 0 && (comment_idx == -1 || string_idx < comment_idx):
+		idx_start = string_idx
+		log.Printf("Multiline 'string' start found")
+		block.blockType = String
+		block.end_string = string_end_block
+	case comment_idx == string_idx:
+	default:
+		log.Printf("No multiline string/comment start found")
+		block.blockType =  None
+		block.end_string = ""
+		return nil
+	}
+	log.Println("find_start_block_comment - block:", block)
+	// TODO if multiline start and end patterns  are in the same row
+	// checking if multine comments/docs start and end in teh same line
+	if idx_start >= 0 && string_end_block != "" {
+		idx_end := find_end_block(line, string_end_block, idx_start)
+		if idx_end > -1 {
+			log.Println("Multirows comment/doc starts and ends in the same line")
+			block.end_string = ""
+		//		if idx_start == 0 and idx_end == (len(string) - len(string_end_block)) {
+		}
+	}
+	
+	//block.end_string = ""
+	log.Println("find_start_block_comment - block:", block)
+	return nil
+}
 
 func isTextFile(filename string) bool {
 	file, err := os.Open(filename)
@@ -41,78 +131,102 @@ func isTextFile(filename string) bool {
 	return strings.HasPrefix(contentType, "text/")
 }
 
+func parseLine(line string, language string, config LanguageConfig, block *Block, stats *FileStats) {
+	trimmed := strings.TrimSpace(line)
+	log.Println("parseLine - Block", block)
+	switch block.blockType {
+	case None:
+		// not inside a multiline block
+		if is_line_with_single_comment(trimmed, config) {
+			stats.Comments++
+			return
+		}
+		if trimmed == "" {
+			stats.Blanks++
+			return
+		}
+			
+		find_start_block_comment(trimmed, config, block)
+		log.Println("parseLine - Block", block)
+		switch block.blockType {
+		case None: 
+			stats.Code++
+			return
+		case Comment:
+			stats.Comments++
+			// starting a multiline block
+			// end block could be in the same line
+		case String:
+			stats.Code++				
+		}		
+	case Comment:
+		stats.Comments++
+		
+		// inside a multiline block
+		if strings.Contains(trimmed, block.end_string) {
+			log.Println("Multirows comment end found")
+			block.blockType = None
+			block.end_string = ""
+		}
+	case String:
+		stats.Code++
+		
+		// inside a multiline block
+		if strings.Contains(trimmed, block.end_string) {
+			log.Println("Multirows string end found")
+			block.blockType = None
+			block.end_string = ""
+		}
+	// default:
+	// 	//TODO Raise
+		
+	}
+	log.Println("parseLine - block", block)
+}
+
 func parseFile(filename string, config Config) StatsMap {
+	var language string
+	var languageConfig LanguageConfig
 	ext := filepath.Ext(filename)
 	if len(ext) > 1 {
 		ext = ext[1:] // removes the dot
 	}
 
-	language := ""
-	startComment := ""
-	endComment := ""
-	singleComment := ""
-
 	if lang, ok := config.Extensions[ext]; ok {
 		language = lang
-		startComment = config.Languages[lang].StartComment
-		endComment = config.Languages[lang].EndComment
-		singleComment = config.Languages[lang].SingleComment
+		languageConfig = config.Languages[language]
 	} else {
 		return StatsMap{ext: FileStats{Files: 1, Skipped: 1}}
 	}
 
-	data, err := os.ReadFile(filename)
+	file, err := os.Open(filename)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error reading file %s: %v\n", filename, err)
 		return StatsMap{ext: FileStats{Files: 1, Skipped: 1}}
 	}
+	defer file.Close()
 
-	content := string(data)
-
-	// Count original lines (add 1 if file doesn't end with newline)
-	originalLines := strings.Count(content, "\n")
-	if len(content) > 0 && !strings.HasSuffix(content, "\n") {
-		originalLines++
+	block := Block{
+		blockType:  None,
+		end_string: "",
 	}
+	
+	var stats FileStats
+	stats.Files++
+	
+	scanner := bufio.NewScanner(file)
 
-	// Remove block comments (non-greedy)
-	if startComment != "" && endComment != "" {
-		reBlockComments := regexp.MustCompile("(?s)" + regexp.QuoteMeta(startComment) + ".*?" + regexp.QuoteMeta(endComment))
-		content = reBlockComments.ReplaceAllString(content, singleComment)
+	for scanner.Scan() {
+		line := scanner.Text()
+		stats.Lines++
+		log.Println("Line: '", line, "'")
+		log.Println("parseFile - block:", block, "stats:", stats)
+		parseLine(line, language, languageConfig, &block, &stats)
+		log.Println("parseFile - block:", block, "stats:", stats)
 	}
-
-	comments := originalLines - strings.Count(content, "\n")
-	if len(content) > 0 && !strings.HasSuffix(content, "\n") {
-		comments += originalLines - (strings.Count(content, "\n") + 1)
-	}
-
-	// Process line-by-line
-	code, blanks := 0, 0
-	lines := strings.Split(content, "\n")
-
-	for _, line := range lines {
-		trimmed := strings.TrimSpace(line)
-		if trimmed == "" {
-			blanks++
-		} else if singleComment != "" && strings.HasPrefix(trimmed, singleComment) {
-			comments++
-		} else {
-			code++
-		}
-	}
-
-	if blanks > 0 {
-		blanks--
-	}
-
-	return StatsMap{language: FileStats{
-		Files:    1,
-		Skipped:  0,
-		Lines:    originalLines,
-		Code:     code,
-		Comments: comments,
-		Blanks:   blanks,
-	}}
+	
+	resp := StatsMap{}
+	resp[language] = stats
+	return resp
 }
 
 func parseFiles(files []string, config Config) StatsMap {

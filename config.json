@@ -1,108 +1,45 @@
-{
-  "languages": {
-    "ada": {
-      "singleComment": "--"
-    },
-    "bash": {
-      "singleComment": "#"
-    },
-    "c": {
-      "startComment": "/*",
-      "endComment": "*/",
-      "singleComment": "//"
-    },
-    "cpp": {
-      "startComment": "/*",
-      "endComment": "*/",
-      "singleComment": "//"
-    },
-    "elisp": {
-      "singleComment": ";;"
-    },
-    "go": {
-      "startComment": "/*",
-      "endComment": "*/",
-      "singleComment": "//"
-    },
-    "java": {
-      "startComment": "/*",
-      "endComment": "*/",
-      "singleComment": "//"
-    },
-    "javascript": {
-      "startComment": "/*",
-      "endComment": "*/",
-      "singleComment": "//"
-    },
-    "lua": {
-      "startComment": "--[[",
-      "endComment": "]]",
-      "singleComment": "--"
-    },
-    "makefile": {
-      "singleComment": "#"
-    },
-    "nix": {
-      "singleComment": "#"
-    },
-    "ocaml": {
-      "startComment": "(*",
-      "endComment": "*)"
-    },
-    "perl": {
-      "singleComment": "#"
-    },
+{"languages": {
     "python": {
-      "singleComment": "#"
-    },
-    "r": {
-      "singleComment": "#"
-    },
-    "ruby": {
-      "singleComment": "#"
+	"multilineString": [{"start": "\"\"\"", "end": "\"\"\""}],
+	"singleComments": ["#"],
+	"doc_quotes": [["\\\"\\\"\\\"", "\\\"\\\"\\\""],
+		       ["'''", "'''"]],
+	"quotes": [["\\\"", "\\\""],
+		   ["'", "'"]]
     },
     "rust": {
-      "startComment": "/*",
-      "endComment": "*/",
-      "singleComment": "//"
-    },
-    "scheme": {
-      "singleComment": ";;"
-    },
-    "toml": {
-      "singleComment": "#"
-    },
-    "yaml": {
-      "singleComment": "#"
+	"multilineComment": [{"start": "/*", "end": "*/"}],
+	"multilineString": [{"start": "r#\"", "end": "\"#"}, {"start": "r###\"", "end": "\"###"}],
+	"singleComments": ["//"]
     }
-  },
-  "extensions": {
-    "adb": "ada",
-    "ads": "ada",
-    "sh": "bash",
-    "c": "c",
-    "h": "c",
-    "cpp": "cpp",
-    "hpp": "cpp",
-    "el": "elisp",
-    "go": "go",
-    "java": "java",
-      "js": "javascript",
-      "lua": "lua",
-      "mk": "makefile",
-    "mod": "go",
-      "nix": "nix",
-      "ml": "ocaml",
-      "mli": "ocaml",
-      "pl": "perl",
-      "py": "python",
-      "r": "r",
-      "rb": "ruby",
-      "rs": "rust",
-      "scm": "scheme",
-      "toml": "toml",
-      "yaml": "yaml",
-      "yml": "yaml"
+},
+ "extensions": {
+     "adb": "ada",
+     "ads": "ada",
+     "sh": "bash",
+     "c": "c",
+     "h": "c",
+     "cpp": "cpp",
+     "hpp": "cpp",
+     "el": "elisp",
+     "go": "go",
+     "java": "java",
+     "js": "javascript",
+     "lua": "lua",
+     "mk": "makefile",
+     "mod": "go",
+     "nix": "nix",
+     "ml": "ocaml",
+     "mli": "ocaml",
+     "pl": "perl",
+     "py": "python",
+     "r": "r",
+     "rb": "ruby",
+     "rs": "rust",
+     "scm": "scheme",
+     "toml": "toml",
+     "yaml": "yaml",
+     "yml": "yaml"
   },
   "filenames": {
     "Makefile": "makefile"
