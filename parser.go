@@ -16,12 +16,13 @@ package main
 
 import (
 	"bufio"
-	"log"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
 	"sync"
+
+	"github.com/rs/zerolog/log"
 )
 
 type BlockType int
@@ -97,20 +98,20 @@ func find_start_block_comment(line string, config LanguageConfig, block *Block) 
 		block.end_string = ""
 		return nil
 	}
-	log.Println("find_start_block_comment - block:", block)
+	log.Debug().Msgf("find_start_block_comment - block: %s", block)
 	// TODO if multiline start and end patterns  are in the same row
 	// checking if multine comments/docs start and end in teh same line
 	if idx_start >= 0 && string_end_block != "" {
 		idx_end := find_end_block(line, string_end_block, idx_start)
 		if idx_end > -1 {
-			log.Println("Multirows comment/doc starts and ends in the same line")
+			log.Debug().Msg("Multirows comment/doc starts and ends in the same line")
 			block.end_string = ""
 		//		if idx_start == 0 and idx_end == (len(string) - len(string_end_block)) {
 		}
 	}
 	
 	//block.end_string = ""
-	log.Println("find_start_block_comment - block:", block)
+	log.Debug().Msgf("find_start_block_comment - block: %s", block)
 	return nil
 }
 
@@ -133,7 +134,7 @@ func isTextFile(filename string) bool {
 
 func parseLine(line string, language string, config LanguageConfig, block *Block, stats *FileStats) {
 	trimmed := strings.TrimSpace(line)
-	log.Println("parseLine - Block", block)
+	log.Debug().Msgf("parseLine - Block: %s", block)
 	switch block.blockType {
 	case None:
 		// not inside a multiline block
@@ -147,7 +148,7 @@ func parseLine(line string, language string, config LanguageConfig, block *Block
 		}
 			
 		find_start_block_comment(trimmed, config, block)
-		log.Println("parseLine - Block", block)
+		log.Debug().Msgf("parseLine - Block: %s", block)
 		switch block.blockType {
 		case None: 
 			stats.Code++
@@ -164,7 +165,7 @@ func parseLine(line string, language string, config LanguageConfig, block *Block
 		
 		// inside a multiline block
 		if strings.Contains(trimmed, block.end_string) {
-			log.Println("Multirows comment end found")
+			log.Debug().Msg("Multirows comment end found")
 			block.blockType = None
 			block.end_string = ""
 		}
@@ -173,7 +174,7 @@ func parseLine(line string, language string, config LanguageConfig, block *Block
 		
 		// inside a multiline block
 		if strings.Contains(trimmed, block.end_string) {
-			log.Println("Multirows string end found")
+			log.Debug().Msg("Multirows string end found")
 			block.blockType = None
 			block.end_string = ""
 		}
@@ -181,7 +182,7 @@ func parseLine(line string, language string, config LanguageConfig, block *Block
 	// 	//TODO Raise
 		
 	}
-	log.Println("parseLine - block", block)
+	log.Debug().Msgf("parseLine - block: %s", block)
 }
 
 func parseFile(filename string, config Config) StatsMap {
@@ -218,10 +219,10 @@ func parseFile(filename string, config Config) StatsMap {
 	for scanner.Scan() {
 		line := scanner.Text()
 		stats.Lines++
-		log.Println("Line: '", line, "'")
-		log.Println("parseFile - block:", block, "stats:", stats)
+		log.Debug().Msgf("Line: '%s'", line)
+		log.Debug().Msgf("parseFile - block: %s, stats: %s", block, stats)
 		parseLine(line, language, languageConfig, &block, &stats)
-		log.Println("parseFile - block:", block, "stats:", stats)
+		log.Debug().Msgf("parseFile - block: %s, stats: %s", block, stats)
 	}
 	
 	resp := StatsMap{}

@@ -17,6 +17,10 @@ package main
 import (
 	"fmt"
 	"os"
+	"strings"
+	
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 )
 
 func main() {
@@ -25,6 +29,38 @@ func main() {
 		panic(fmt.Errorf("failed to parse embedded config: %w", err))
 	}
 
+	// Set output to human-friendly format (optional, for console debugging)
+	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
+
+	// Read log level from environment variable
+	levelStr := strings.ToLower(os.Getenv("LOGGING"))
+
+	// Set default log level
+	level := zerolog.InfoLevel
+
+	// Parse level from environment
+	switch strings.ToLower(levelStr) {
+	case "debug":
+		level = zerolog.DebugLevel
+	case "info":
+		level = zerolog.InfoLevel
+	case "warn", "warning":
+		level = zerolog.WarnLevel
+	case "error":
+		level = zerolog.ErrorLevel
+	case "fatal":
+		level = zerolog.FatalLevel
+	case "panic":
+		level = zerolog.PanicLevel
+	case "trace":
+		level = zerolog.TraceLevel
+	default:
+		// fallback, already set to InfoLevel
+	}
+
+	// Set global log level
+	zerolog.SetGlobalLevel(level)
+	
 	if len(os.Args) < 2 {
 		fmt.Println("Usage: tool <directory>")
 		os.Exit(1)
