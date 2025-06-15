@@ -16,7 +16,6 @@ package main
 
 import (
 	"bufio"
-	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -72,7 +71,7 @@ func find_start_block_comment(line string, config LanguageConfig, block *Block) 
 	}
 	for _, b := range config.MultilineStrings {
 		i := strings.Index(line, b.Start)
-		log.Printf("multiline string start=%v, u=%v", b.Start, i)
+		log.Debug().Msgf("multiline string start=%v, u=%v", b.Start, i)
 		if i >= 0 && (string_idx == -1 || i < string_idx) {
 			string_idx       = i
 			string_end_block = b.End	
@@ -83,22 +82,22 @@ func find_start_block_comment(line string, config LanguageConfig, block *Block) 
 	switch {
 	case comment_idx >= 0 && (string_idx == -1 || comment_idx < string_idx):
 		idx_start = comment_idx
-		log.Printf("Multiline 'comment' startfound")
+		log.Debug().Msg("Multiline 'comment' startfound")
 		block.blockType =  Comment
 		block.end_string = comment_end_block
 	case string_idx >= 0 && (comment_idx == -1 || string_idx < comment_idx):
 		idx_start = string_idx
-		log.Printf("Multiline 'string' start found")
+		log.Debug().Msg("Multiline 'string' start found")
 		block.blockType = String
 		block.end_string = string_end_block
 	case comment_idx == string_idx:
 	default:
-		log.Printf("No multiline string/comment start found")
+		log.Debug().Msg("No multiline string/comment start found")
 		block.blockType =  None
 		block.end_string = ""
 		return nil
 	}
-	log.Debug().Msgf("find_start_block_comment - block: %s", block)
+	log.Debug().Msgf("find_start_block_comment - block: %v", block)
 	// TODO if multiline start and end patterns  are in the same row
 	// checking if multine comments/docs start and end in teh same line
 	if idx_start >= 0 && string_end_block != "" {
@@ -111,30 +110,13 @@ func find_start_block_comment(line string, config LanguageConfig, block *Block) 
 	}
 	
 	//block.end_string = ""
-	log.Debug().Msgf("find_start_block_comment - block: %s", block)
+	log.Debug().Msgf("find_start_block_comment - block: %v", block)
 	return nil
-}
-
-func isTextFile(filename string) bool {
-	file, err := os.Open(filename)
-	if err != nil {
-		return false
-	}
-	defer file.Close()
-
-	buffer := make([]byte, 512)
-	n, err := file.Read(buffer)
-	if err != nil {
-		return false
-	}
-
-	contentType := http.DetectContentType(buffer[:n])
-	return strings.HasPrefix(contentType, "text/")
 }
 
 func parseLine(line string, language string, config LanguageConfig, block *Block, stats *FileStats) {
 	trimmed := strings.TrimSpace(line)
-	log.Debug().Msgf("parseLine - Block: %s", block)
+	log.Debug().Msgf("parseLine - Block: %v", block)
 	switch block.blockType {
 	case None:
 		// not inside a multiline block
@@ -148,7 +130,7 @@ func parseLine(line string, language string, config LanguageConfig, block *Block
 		}
 			
 		find_start_block_comment(trimmed, config, block)
-		log.Debug().Msgf("parseLine - Block: %s", block)
+		log.Debug().Msgf("parseLine - Block: %v", block)
 		switch block.blockType {
 		case None: 
 			stats.Code++
@@ -182,7 +164,7 @@ func parseLine(line string, language string, config LanguageConfig, block *Block
 	// 	//TODO Raise
 		
 	}
-	log.Debug().Msgf("parseLine - block: %s", block)
+	log.Debug().Msgf("parseLine - block: %v", block)
 }
 
 func parseFile(filename string, config Config) StatsMap {
@@ -220,9 +202,9 @@ func parseFile(filename string, config Config) StatsMap {
 		line := scanner.Text()
 		stats.Lines++
 		log.Debug().Msgf("Line: '%s'", line)
-		log.Debug().Msgf("parseFile - block: %s, stats: %s", block, stats)
+		log.Debug().Msgf("parseFile - block: %v, stats: %v", block, stats)
 		parseLine(line, language, languageConfig, &block, &stats)
-		log.Debug().Msgf("parseFile - block: %s, stats: %s", block, stats)
+		log.Debug().Msgf("parseFile - block: %v, stats: %v", block, stats)
 	}
 	
 	resp := StatsMap{}
@@ -252,4 +234,15 @@ func parseFiles(files []string, config Config) StatsMap {
 		counter.Merge(result)
 	}
 	return counter
+}
+
+
+func parseDir(root string, config Config) StatsMap {
+	files, err := listDirFiles(root)
+	
+	if err != nil {
+		panic(err)
+	}
+
+	return parseFiles(files, config)
 }

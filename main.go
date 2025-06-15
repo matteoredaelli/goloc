@@ -62,22 +62,14 @@ func main() {
 	zerolog.SetGlobalLevel(level)
 	
 	if len(os.Args) < 2 {
-		fmt.Println("Usage: tool <directory>")
+		fmt.Printf("Usage: %s dirOrFile ...\n",  os.Args[0])
 		os.Exit(1)
 	}
 
-	directoryOrFile := os.Args[1]
+	files := listFiles(os.Args[1:])
 	counter := StatsMap{}
 
-	if info, err := os.Stat(directoryOrFile); err == nil && info.IsDir() {
-		fmt.Println("Directory exists")
-		counter = parseDir(directoryOrFile, *config)
-	} else if os.IsNotExist(err) {
-		fmt.Printf("Not existing Directory or file: %v\n", err)
-		os.Exit(1)
-	} else {
-		counter = parseFile(directoryOrFile, *config)
-	}
+	counter = parseFiles(files, *config)
 
 	PrintStatsMapTable(counter)
 }

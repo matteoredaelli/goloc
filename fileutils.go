@@ -17,12 +17,46 @@ package main
 import (
 	"fmt"
 	"io/fs"
+	"net/http"
 	"os"
 	"path/filepath"
+	"slices"
+	"strings"
 	"sync"
 
+	"github.com/rs/zerolog/log"
 	"github.com/sabhiram/go-gitignore"
 )
+
+func isTextFile(filename string) bool {
+	file, err := os.Open(filename)
+	if err != nil {
+		return false
+	}
+	defer file.Close()
+
+	buffer := make([]byte, 512)
+	n, err := file.Read(buffer)
+	if err != nil {
+		return false
+	}
+
+	contentType := http.DetectContentType(buffer[:n])
+	return strings.HasPrefix(contentType, "text/")
+}
+
+func removeDuplicates(input []string) []string {
+	seen := make(map[string]bool)
+	result := []string{}
+
+	for _, item := range input {
+		if !seen[item] {
+			seen[item] = true
+			result = append(result, item)
+		}
+	}
+	return result
+}
 
 func dirExists(path string) bool {
 	info, err := os.Stat(path)
@@ -32,7 +66,33 @@ func dirExists(path string) bool {
 	return info.IsDir()
 }
 
-func listFiles(root string) ([]string, error) {
+func listFiles(paths []string) []string {
+	var result []string
+
+	for _, path := range(paths)  {
+		info, err := os.Stat(path)
+		if err != nil {
+			log.Error().Msgf("%s: error: %v\n", path, err)
+			continue
+		}
+
+		if info.IsDir() {
+			log.Debug().Msgf("%s is a directory\n", path)
+			files, err := listDirFiles(path)
+			if err != nil {
+				result = slices.Concat(result, files)
+			}
+		} else if isTextFile(path) {
+			log.Info().Msgf("%s is a text file\n", path)
+			result = append(result, path)
+		} else {
+			log.Error().Msgf("%s is not a text file\n", path)
+		}
+	}
+	return removeDuplicates(result)
+}
+
+func listDirFiles(root string) ([]string, error) {
 	var files []string
 	ig, err := ignore.CompileIgnoreFile(filepath.Join(root, ".gitignore"))
 	
@@ -61,17 +121,8 @@ func listFiles(root string) ([]string, error) {
 	return files, err
 }
 
-func parseDir(root string, config Config) StatsMap {
-	files, err := listFiles(root)
-	
-	if err != nil {
-		panic(err)
-	}
 
-	return parseFiles(files, config)
-}
-
-func parseDirGitignore(root string, config Config) (StatsMap, error) {
+func parseDirGitignore_old(root string, config Config) (StatsMap, error) {
 	ig, err := ignore.CompileIgnoreFile(filepath.Join(root, ".gitignore"))
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse .gitignore: %w", err)
