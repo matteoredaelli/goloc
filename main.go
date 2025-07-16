@@ -66,6 +66,11 @@ func main() {
 	// Define a flag: -o csv
 	outputFormat := flag.String("o", "table", "output format (e.g. csv, json)")
 
+	flag.Usage = func() {
+		fmt.Fprintf(os.Stderr, "Usage: %s [options] file1 file2 dir1...\n", os.Args[0])
+		fmt.Fprintln(os.Stderr, "\nOptions:")
+		flag.PrintDefaults()
+	}
 	// Parse the flags
 	flag.Parse()
 
@@ -76,7 +81,7 @@ func main() {
 	files := listFiles(input_files)
 	
 	if len(files) == 0 {
-		fmt.Printf("Usage: %s dirOrFile ...\n",  os.Args[0])
+		flag.Usage()
 		os.Exit(1)
 	}
 
