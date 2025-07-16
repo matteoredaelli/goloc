@@ -70,6 +70,8 @@ func listFiles(paths []string) []string {
 	var result []string
 
 	for _, path := range(paths)  {
+		log.Info().Msgf("Processing input file/dir '%s'", path)
+		
 		info, err := os.Stat(path)
 		if err != nil {
 			log.Error().Msgf("%s: error: %v\n", path, err)

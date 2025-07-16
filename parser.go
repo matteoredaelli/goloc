@@ -174,12 +174,13 @@ func parseFile(filename string, config Config) StatsMap {
 	if len(ext) > 1 {
 		ext = ext[1:] // removes the dot
 	}
-	log.Debug().Msgf("Parse file '%s' with ext '%s'", filename, ext)
+	log.Info().Msgf("Parse file '%s' with ext '%s'", filename, ext)
 	if lang, ok := config.Extensions[ext]; ok {
 		language = lang
 		languageConfig = config.Languages[language]
 	} else {
-		return StatsMap{ext: FileStats{Files: 1, Skipped: 1}}
+		unknown := "ext_" + ext
+		return StatsMap{unknown: FileStats{Files: 1, Skipped: 1}}
 	}
 	log.Debug().Msgf("file '%s' is related to language '%s'", filename, language)
 	

@@ -15,6 +15,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
 	"strings"
@@ -60,16 +61,33 @@ func main() {
 
 	// Set global log level
 	zerolog.SetGlobalLevel(level)
+
+	// Define a flag: -o csv
+	outputFormat := flag.String("o", "table", "output format (e.g. csv, json)")
+
+	// Parse the flags
+	flag.Parse()
+
+	// Remaining args after flags (e.g. file1, file2)
+	input_files := flag.Args()
+	log.Info().Msgf("Command line params: files or dirs: %v", input_files)
+
+	files := listFiles(input_files)
 	
-	if len(os.Args) < 2 {
+	if len(files) == 0 {
 		fmt.Printf("Usage: %s dirOrFile ...\n",  os.Args[0])
 		os.Exit(1)
 	}
 
-	files := listFiles(os.Args[1:])
 	counter := StatsMap{}
 
 	counter = parseFiles(files, *config)
 
-	PrintStatsMapTable(counter)
+	switch *outputFormat {
+	case "table":
+		PrintStatsMapTable(counter)
+	default:
+		log.Error().Msgf("Unknown output format (-o) '%s'", *outputFormat)
+	}
+
 }
