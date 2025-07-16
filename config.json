@@ -729,7 +729,7 @@
       "line_comment": ["#", "//"],
       "multi_line_comments": [["/*", "*/"]],
       "quotes": [["\\\"", "\\\""]],
-      "extensions": ["hcl", "tf", "tfvars"]
+      "extensions": ["hcl", "tf", "tofu", "tfvars"]
     },
     "Headache": {
       "line_comment": ["//"],
