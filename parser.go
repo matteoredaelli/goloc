@@ -63,18 +63,18 @@ func find_start_block_comment(line string, config LanguageConfig, block *Block) 
 	string_idx := -1
 	string_end_block := ""
 	for _, b := range config.MultilineComments {
-		i := strings.Index(line, b.Start)
+		i := strings.Index(line, b[0])
 		if i >= 0 && (comment_idx == -1 || i < comment_idx) {
 			comment_idx       = i
-			comment_end_block = b.End	
+			comment_end_block = b[1]	
 		}
 	}
 	for _, b := range config.MultilineStrings {
-		i := strings.Index(line, b.Start)
-		log.Debug().Msgf("multiline string start=%v, u=%v", b.Start, i)
+		i := strings.Index(line, b[0])
+		log.Debug().Msgf("multiline string start=%v, u=%v", b[0], i)
 		if i >= 0 && (string_idx == -1 || i < string_idx) {
 			string_idx       = i
-			string_end_block = b.End	
+			string_end_block = b[1]	
 		}
 	}
 	log.Printf("comment_idx=%v, string_idx=%v", comment_idx, string_idx)
@@ -174,14 +174,15 @@ func parseFile(filename string, config Config) StatsMap {
 	if len(ext) > 1 {
 		ext = ext[1:] // removes the dot
 	}
-
+	log.Debug().Msgf("Parse file '%s' with ext '%s'", filename, ext)
 	if lang, ok := config.Extensions[ext]; ok {
 		language = lang
 		languageConfig = config.Languages[language]
 	} else {
 		return StatsMap{ext: FileStats{Files: 1, Skipped: 1}}
 	}
-
+	log.Debug().Msgf("file '%s' is related to language '%s'", filename, language)
+	
 	file, err := os.Open(filename)
 	if err != nil {
 		return StatsMap{ext: FileStats{Files: 1, Skipped: 1}}

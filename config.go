@@ -17,47 +17,41 @@ package main
 import (
 	_ "embed"
 	"encoding/json"
-	"os"
+	//	"os"
 )
 
 //go:embed config.json
 var configData []byte
 
-type MultilineBlock struct {
-	Start string `json:"start,omitempty"`
-	End   string `json:"end,omitempty"`		
-}
-
 type LanguageConfig struct {
-	MultilineComments []MultilineBlock `json:"multilineComments,omitempty"`
-	SingleComments    []string `json:"singleComments,omitempty"`
-	MultilineStrings   []MultilineBlock `json:"multilineString,omitempty"`
+	Quotes            [][]string `json:"quotes,omitempty"`
+	MultilineComments [][]string `json:"multi_line_comments,omitempty"`
+	SingleComments    []string `json:"line_comment,omitempty"`
+	MultilineStrings  [][]string `json:"doc_quotes,omitempty"`
+	Extensions        []string `json:"extensions"`
 }
 
 type Config struct {
 	Languages  map[string]LanguageConfig `json:"languages"`
-	Extensions map[string]string         `json:"extensions"`
-	Filenames  map[string]string         `json:"filenames"`
-}
-
-func LoadConfig(filename string) (*Config, error) {
-	data, err := os.ReadFile(filename)
-	if err != nil {
-		return nil, err
-	}
-
-	var config Config
-	if err := json.Unmarshal(data, &config); err != nil {
-		return nil, err
-	}
-	return &config, nil
+	Extensions map[string]string `json:"extensions"`
 }
 
 func LoadEmbeddedConfig() (*Config, error) {
 	var config Config
+
 	err := json.Unmarshal(configData, &config)
 	if err != nil {
 		return nil, err
+	}
+
+	// Initialize Extensions map before using it
+	config.Extensions = make(map[string]string)
+	
+	// move extensions
+	for lang, value := range config.Languages {
+		for _, ext := range value.Extensions {	
+			config.Extensions[ext] = lang
+		}
 	}
 	return &config, nil
 }

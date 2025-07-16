@@ -80,10 +80,12 @@ func listFiles(paths []string) []string {
 			log.Debug().Msgf("%s is a directory\n", path)
 			files, err := listDirFiles(path)
 			if err != nil {
+				log.Error().Msgf("%s: error: %v\n", path, err)
+			} else {
 				result = slices.Concat(result, files)
 			}
 		} else if isTextFile(path) {
-			log.Info().Msgf("%s is a text file\n", path)
+			log.Debug().Msgf("%s is a text file\n", path)
 			result = append(result, path)
 		} else {
 			log.Error().Msgf("%s is not a text file\n", path)
@@ -104,6 +106,8 @@ func listDirFiles(root string) ([]string, error) {
 		// Compute relative path for .gitignore matching
 		relPath, _ := filepath.Rel(root, path)
 
+		log.Debug().Msgf("path = '%s', relPath = '%s'", path, relPath)
+		
 		// Skip ignored files or directories
 		if ig != nil && ig.MatchesPath(relPath) {
 			if d.IsDir() {
@@ -112,7 +116,12 @@ func listDirFiles(root string) ([]string, error) {
 			return nil
 		}
 
+		if d.IsDir() && strings.HasPrefix(relPath, ".git") {
+			log.Debug().Msgf("git dir '%s' will be skipped", path)
+			return fs.SkipDir
+		}
 		if !d.IsDir() {
+			log.Debug().Msgf("file '%s' will be parsed", path)
 			files = append(files, path)
 		}
 		return nil
