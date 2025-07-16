@@ -15,6 +15,7 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
@@ -84,6 +85,14 @@ func main() {
 	counter = parseFiles(files, *config)
 
 	switch *outputFormat {
+	case "json":
+		jsonBytes, err := json.Marshal(counter)
+		if err != nil {
+			fmt.Println("Error:", err)
+			return
+		}
+		jsonStr := string(jsonBytes)
+		fmt.Println(jsonStr)
 	case "table":
 		PrintStatsMapTable(counter)
 	default:
