@@ -15,6 +15,8 @@
 package main
 
 import (
+	"encoding/csv"
+	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
@@ -141,4 +143,44 @@ func PrintSummaryStatsTable(summary SummaryStatsMap) {
 	table.SetFooterAlignment(tablewriter.ALIGN_RIGHT)
 	
 	table.Render()
+}
+
+func PrintSummaryStatsCsv(summary SummaryStatsMap) error {
+	data  := summary.Stats
+	writer := csv.NewWriter(os.Stdout)
+	defer writer.Flush()
+
+	// Write header
+	header := []string{"Path", "Files", "Skipped", "Lines", "Code", "Comments", "Blanks"}
+	if err := writer.Write(header); err != nil {
+		return fmt.Errorf("error writing header: %w", err)
+	}
+
+	// Write data rows
+	for path, stats := range data {
+		record := []string{
+			path,
+			fmt.Sprint(stats.Files),
+			fmt.Sprint(stats.Skipped),
+			fmt.Sprint(stats.Lines),
+			fmt.Sprint(stats.Code),
+			fmt.Sprint(stats.Comments),
+			fmt.Sprint(stats.Blanks),
+		}
+		if err := writer.Write(record); err != nil {
+			return fmt.Errorf("error writing record: %w", err)
+		}
+	}
+	return nil
+}
+
+func PrintSummaryStatsJson(summary SummaryStatsMap) error {
+	jsonBytes, err := json.Marshal(summary)
+	if err != nil {
+		fmt.Errorf("Error:", err)
+		return err
+	}
+	jsonStr := string(jsonBytes)
+	fmt.Println(jsonStr)
+	return nil
 }

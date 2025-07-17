@@ -15,7 +15,6 @@
 package main
 
 import (
-	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
@@ -92,14 +91,10 @@ func main() {
 	summary := BuildSummaryStats(counter)
 	
 	switch *outputFormat {
+	case "csv":
+		PrintSummaryStatsCsv(summary)
 	case "json":
-		jsonBytes, err := json.Marshal(summary)
-		if err != nil {
-			fmt.Println("Error:", err)
-			return
-		}
-		jsonStr := string(jsonBytes)
-		fmt.Println(jsonStr)
+		PrintSummaryStatsJson(summary)
 	case "table":
 		PrintSummaryStatsTable(summary)
 	default:

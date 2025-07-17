@@ -1053,6 +1053,7 @@
     },
     "Markdown": {
       "literate": true,
+      "multi_line_comments": [["<!--", "-->"]],
       "important_syntax": ["```"],
       "extensions": ["md", "markdown"]
     },
