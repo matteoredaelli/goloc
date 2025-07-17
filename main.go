@@ -85,13 +85,15 @@ func main() {
 		os.Exit(1)
 	}
 
-	counter := StatsMap{}
+	counter := FileStatsMap{}
 
 	counter = parseFiles(files, *config)
 
+	summary := BuildSummaryStats(counter)
+	
 	switch *outputFormat {
 	case "json":
-		jsonBytes, err := json.Marshal(counter)
+		jsonBytes, err := json.Marshal(summary)
 		if err != nil {
 			fmt.Println("Error:", err)
 			return
@@ -99,7 +101,7 @@ func main() {
 		jsonStr := string(jsonBytes)
 		fmt.Println(jsonStr)
 	case "table":
-		PrintStatsMapTable(counter)
+		PrintSummaryStatsTable(summary)
 	default:
 		log.Error().Msgf("Unknown output format (-o) '%s'", *outputFormat)
 	}

@@ -133,7 +133,7 @@ func listDirFiles(root string) ([]string, error) {
 }
 
 
-func parseDirGitignore_old(root string, config Config) (StatsMap, error) {
+func parseDirGitignore_old(root string, config Config) (FileStatsMap, error) {
 	ig, err := ignore.CompileIgnoreFile(filepath.Join(root, ".gitignore"))
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse .gitignore: %w", err)
@@ -141,8 +141,8 @@ func parseDirGitignore_old(root string, config Config) (StatsMap, error) {
 
 	var wg sync.WaitGroup
 	sem := make(chan struct{}, 8) // Or any concurrency limit
-	results := make(chan StatsMap)
-	counter := StatsMap{}
+	results := make(chan FileStatsMap)
+	counter := FileStatsMap{}
 
 	// Walk directory
 	err = filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {

@@ -167,7 +167,7 @@ func parseLine(line string, language string, config LanguageConfig, block *Block
 	log.Debug().Msgf("parseLine - block: %v", block)
 }
 
-func parseFile(filename string, config Config) StatsMap {
+func parseFile(filename string, config Config) FileStatsMap {
 	var language string
 	var languageConfig LanguageConfig
 	ext := filepath.Ext(filename)
@@ -180,13 +180,13 @@ func parseFile(filename string, config Config) StatsMap {
 		languageConfig = config.Languages[language]
 	} else {
 		unknown := "ext_" + ext
-		return StatsMap{unknown: FileStats{Files: 1, Skipped: 1}}
+		return FileStatsMap{unknown: FileStats{Files: 1, Skipped: 1}}
 	}
 	log.Debug().Msgf("file '%s' is related to language '%s'", filename, language)
 	
 	file, err := os.Open(filename)
 	if err != nil {
-		return StatsMap{ext: FileStats{Files: 1, Skipped: 1}}
+		return FileStatsMap{ext: FileStats{Files: 1, Skipped: 1}}
 	}
 	defer file.Close()
 
@@ -209,14 +209,14 @@ func parseFile(filename string, config Config) StatsMap {
 		log.Debug().Msgf("parseFile - block: %v, stats: %v", block, stats)
 	}
 	
-	resp := StatsMap{}
+	resp := FileStatsMap{}
 	resp[language] = stats
 	return resp
 }
 
-func parseFiles(files []string, config Config) StatsMap {
+func parseFiles(files []string, config Config) FileStatsMap {
 	var wg sync.WaitGroup
-	results := make(chan StatsMap, len(files)) // buffered to avoid blocking
+	results := make(chan FileStatsMap, len(files)) // buffered to avoid blocking
 
 	for _, file := range files {
 		wg.Add(1)
@@ -231,7 +231,7 @@ func parseFiles(files []string, config Config) StatsMap {
 	close(results)
 
 	// Collect and return counter
-	counter := StatsMap{}
+	counter := FileStatsMap{}
 	for result := range results {
 		counter.Merge(result)
 	}
@@ -239,7 +239,7 @@ func parseFiles(files []string, config Config) StatsMap {
 }
 
 
-func parseDir(root string, config Config) StatsMap {
+func parseDir(root string, config Config) FileStatsMap {
 	files, err := listDirFiles(root)
 	
 	if err != nil {

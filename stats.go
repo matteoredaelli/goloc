@@ -17,6 +17,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"strings"
 	"sort"
 
 	"github.com/olekukonko/tablewriter"
@@ -31,7 +32,13 @@ type FileStats struct {
 	Blanks   int
 }
 
-type StatsMap map[string]FileStats
+type FileStatsMap map[string]FileStats
+
+type SummaryStatsMap struct {
+	Totals            FileStats
+	Stats             FileStatsMap
+	MostUsedLanguage  string
+}
 
 // Add adds values from another Stats to this one
 func (s *FileStats) Add(other FileStats) {
@@ -43,7 +50,7 @@ func (s *FileStats) Add(other FileStats) {
 	s.Blanks += other.Blanks
 }
 
-func (sm StatsMap) Merge(other StatsMap) {
+func (sm FileStatsMap) Merge(other FileStatsMap) {
 	for k, v2 := range other {
 		if v1, exists := sm[k]; exists {
 			v1.Add(v2)
@@ -54,7 +61,40 @@ func (sm StatsMap) Merge(other StatsMap) {
 	}
 }
 
-func PrintStatsMapTable(data StatsMap) {
+func BuildSummaryStats(data FileStatsMap) SummaryStatsMap {
+	var result SummaryStatsMap
+	var maxLang string
+	var maxFiles int
+	var total FileStats
+	
+	for lang, stats := range data {
+		total.Files += stats.Files
+		total.Skipped += stats.Skipped
+		total.Lines += stats.Lines
+		total.Code += stats.Code
+		total.Comments += stats.Comments
+		total.Blanks += stats.Blanks
+		
+		if strings.HasPrefix(lang, "ext_") {
+			continue
+		}
+		if stats.Files > maxFiles {
+			maxFiles = stats.Files
+			maxLang = lang
+		}
+	}
+	result.Stats            = data
+	result.Totals           = total
+	result.MostUsedLanguage = maxLang
+	
+	return result	
+}
+
+func PrintSummaryStatsTable(summary SummaryStatsMap) {
+	//var buf bytes.Buffer
+	//table := tablewriter.NewWriter(&buf)
+	data  := summary.Stats
+	total := summary.Totals
 	table := tablewriter.NewWriter(os.Stdout)
 	table.SetHeader([]string{"Lang", "Files", "Skipped", "Lines", "Code", "Comments", "Blanks"})
 
@@ -89,5 +129,16 @@ func PrintStatsMapTable(data StatsMap) {
 		table.Append(row)
 	}
 
+	table.SetFooter([]string{
+		"TOTAL",
+		fmt.Sprint(total.Files),
+		fmt.Sprint(total.Skipped),
+		fmt.Sprint(total.Lines),
+		fmt.Sprint(total.Code),
+		fmt.Sprint(total.Comments),
+		fmt.Sprint(total.Blanks),
+	})
+	table.SetFooterAlignment(tablewriter.ALIGN_RIGHT)
+	
 	table.Render()
 }
