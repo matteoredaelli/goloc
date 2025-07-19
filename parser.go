@@ -179,10 +179,13 @@ func parseFile(filename string, config Config) FileStatsMap {
 	
 	log.Info().Msgf("Parse file '%s' with ext '%s'", filename, ext)
 	if lang, ok := config.Extensions[ext]; ok {
+		if config.Options.CountFiles {
+			return FileStatsMap{lang: FileStats{Files: 1}}
+		}
 		language = lang
 		languageConfig = config.Languages[language]
 	} else {
-		if config.Options.SkipUnknown {
+		if ! config.Options.UnknownFiles {
 			return nil
 		} else {
 			unknown := "ext_" + ext

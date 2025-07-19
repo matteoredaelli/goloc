@@ -33,7 +33,8 @@ type LanguageConfig struct {
 
 
 type Options struct {
-	SkipUnknown bool
+	CountFiles  bool
+	UnknownFiles bool
 }
 
 type Config struct {

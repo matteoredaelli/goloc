@@ -63,8 +63,10 @@ func main() {
 	zerolog.SetGlobalLevel(level)
 
 	// Define a flag: -o csv
+	countFiles := flag.Bool("f", false, "count files without parsing lines")
 	outputFormat := flag.String("o", "table", "output format (table|csv|json)")
-	skipUnknown := flag.Bool("skip", false, "skip files with unknown extention")
+	showLanguages := flag.Bool("l", false, "show supported languages/extensions and exit")
+	unknownFiles := flag.Bool("u", false, "count and show files with unknown extention")
 	
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage: %s [options] [file or dir] ...\n", os.Args[0])
@@ -74,7 +76,13 @@ func main() {
 	// Parse the flags
 	flag.Parse()
 
-	(*config).Options = Options{SkipUnknown: *skipUnknown}
+	if *showLanguages {
+		for ext, lang := range (*config).Extensions {
+			fmt.Fprintln(os.Stdout, ext, "\t", lang)
+		}
+		os.Exit(0)
+	}
+	(*config).Options = Options{UnknownFiles: *unknownFiles, CountFiles: *countFiles}
 	
 	// Remaining args after flags (e.g. file1, file2)
 	input_files := flag.Args()
