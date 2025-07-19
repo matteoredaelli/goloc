@@ -63,23 +63,31 @@ func main() {
 	zerolog.SetGlobalLevel(level)
 
 	// Define a flag: -o csv
-	outputFormat := flag.String("o", "table", "output format (e.g. csv, json)")
-
+	outputFormat := flag.String("o", "table", "output format (table|csv|json)")
+	skipUnknown := flag.Bool("skip", false, "skip files with unknown extention")
+	
 	flag.Usage = func() {
-		fmt.Fprintf(os.Stderr, "Usage: %s [options] file1 file2 dir1...\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "Usage: %s [options] [file or dir] ...\n", os.Args[0])
 		fmt.Fprintln(os.Stderr, "\nOptions:")
 		flag.PrintDefaults()
 	}
 	// Parse the flags
 	flag.Parse()
 
+	(*config).Options = Options{SkipUnknown: *skipUnknown}
+	
 	// Remaining args after flags (e.g. file1, file2)
 	input_files := flag.Args()
 	log.Info().Msgf("Command line params: files or dirs: %v", input_files)
 
+	if len(input_files) == 0 {
+		input_files = []string{"."}
+	}
+	
 	files := listFiles(input_files)
 	
 	if len(files) == 0 {
+		log.Warn().Msgf("No files found in '%v'", input_files)
 		flag.Usage()
 		os.Exit(1)
 	}

@@ -31,9 +31,15 @@ type LanguageConfig struct {
 	Extensions        []string `json:"extensions"`
 }
 
+
+type Options struct {
+	SkipUnknown bool
+}
+
 type Config struct {
 	Languages  map[string]LanguageConfig `json:"languages"`
 	Extensions map[string]string `json:"extensions"`
+	Options    Options `json:"options"`
 }
 
 func LoadEmbeddedConfig() (*Config, error) {
@@ -44,7 +50,7 @@ func LoadEmbeddedConfig() (*Config, error) {
 		return nil, err
 	}
 
-	// Initialize Extensions map before using it
+	// Initialize Extensions and Options maps before using it
 	config.Extensions = make(map[string]string)
 	
 	// move extensions
