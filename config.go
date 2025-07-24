@@ -17,6 +17,9 @@ package main
 import (
 	_ "embed"
 	"encoding/json"
+	"errors"
+	"path/filepath"
+	"strings"
 	//	"os"
 )
 
@@ -29,6 +32,7 @@ type LanguageConfig struct {
 	SingleComments    []string `json:"line_comment,omitempty"`
 	MultilineStrings  [][]string `json:"doc_quotes,omitempty"`
 	Extensions        []string `json:"extensions"`
+	Filenames         []string `json:"filenames"`
 }
 
 
@@ -40,6 +44,7 @@ type Options struct {
 type Config struct {
 	Languages  map[string]LanguageConfig `json:"languages"`
 	Extensions map[string]string `json:"extensions"`
+	Filenames  map[string]string `json:"filenames"`
 	Options    Options `json:"options"`
 }
 
@@ -53,12 +58,35 @@ func LoadEmbeddedConfig() (*Config, error) {
 
 	// Initialize Extensions and Options maps before using it
 	config.Extensions = make(map[string]string)
-	
+	config.Filenames = make(map[string]string)
 	// move extensions
 	for lang, value := range config.Languages {
 		for _, ext := range value.Extensions {	
 			config.Extensions[ext] = lang
 		}
+		for _, file := range value.Filenames {
+			config.Filenames[file] = lang
+		}
 	}
 	return &config, nil
+}
+
+func findLanguage(filename string, config Config) (string, error) {
+	filename = strings.ToLower(filepath.Base(filename)) // Windows system
+	ext := filepath.Ext(filename)
+	if len(ext) > 1 {
+		ext = ext[1:] // removes the dot
+	}
+	if len(ext) >= 1 {
+		if lang, ok := config.Extensions[ext]; ok {
+			return lang, nil
+		} else {
+			return ext, errors.New("unknown_extension")
+		}
+	}
+	if lang, ok := config.Filenames[filename]; ok {
+			return lang, nil
+		} else {
+			return filename, errors.New("unknown_filename")
+		}
 }

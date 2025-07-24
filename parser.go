@@ -17,7 +17,6 @@ package main
 import (
 	"bufio"
 	"os"
-	"path/filepath"
 	"strings"
 	"sync"
 
@@ -170,33 +169,28 @@ func parseLine(line string, language string, config LanguageConfig, block *Block
 func parseFile(filename string, config Config) FileStatsMap {
 	var language string
 	var languageConfig LanguageConfig
-	ext := filepath.Ext(filename)
-	if len(ext) > 1 {
-		ext = ext[1:] // removes the dot
+	
+	log.Info().Msgf("Parse file '%s'", filename)
+	lang, err := findLanguage(filename, config)
+	if config.Options.CountFiles {
+		return FileStatsMap{lang: FileStats{Files: 1}}
 	}
-	
-	ext = strings.ToLower(ext) // Windows system
-	
-	log.Info().Msgf("Parse file '%s' with ext '%s'", filename, ext)
-	if lang, ok := config.Extensions[ext]; ok {
-		if config.Options.CountFiles {
-			return FileStatsMap{lang: FileStats{Files: 1}}
-		}
-		language = lang
-		languageConfig = config.Languages[language]
-	} else {
+	if err != nil {
 		if ! config.Options.UnknownFiles {
 			return nil
 		} else {
-			unknown := "ext_" + ext
+			unknown := "unknown_" + lang
 			return FileStatsMap{unknown: FileStats{Files: 1, Skipped: 1}}
 		}
 	}
+	language = lang
+	languageConfig = config.Languages[language]
+
 	log.Debug().Msgf("file '%s' is related to language '%s'", filename, language)
 	
 	file, err := os.Open(filename)
 	if err != nil {
-		return FileStatsMap{ext: FileStats{Files: 1, Skipped: 1}}
+		return FileStatsMap{language: FileStats{Files: 1, Skipped: 1}}
 	}
 	defer file.Close()
 
