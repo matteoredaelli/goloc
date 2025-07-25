@@ -77,16 +77,13 @@ func findLanguage(filename string, config Config) (string, error) {
 	if len(ext) > 1 {
 		ext = ext[1:] // removes the dot
 	}
-	if len(ext) >= 1 {
-		if lang, ok := config.Extensions[ext]; ok {
+	if lang, ok := config.Extensions[ext]; ok {
+		return lang, nil
+	} else {
+		if lang, ok := config.Filenames[filename]; ok {
 			return lang, nil
 		} else {
-			return ext, errors.New("unknown_extension")
+			return ext, errors.New("unknown_extension_or_filename")
 		}
 	}
-	if lang, ok := config.Filenames[filename]; ok {
-			return lang, nil
-		} else {
-			return filename, errors.New("unknown_filename")
-		}
 }

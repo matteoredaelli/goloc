@@ -177,7 +177,7 @@ func PrintSummaryStatsCsv(summary SummaryStatsMap) error {
 func PrintSummaryStatsJson(summary SummaryStatsMap) error {
 	jsonBytes, err := json.Marshal(summary)
 	if err != nil {
-		fmt.Errorf("Error:", err)
+		fmt.Errorf("Error: %s", err)
 		return err
 	}
 	jsonStr := string(jsonBytes)
